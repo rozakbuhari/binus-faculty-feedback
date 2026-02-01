@@ -8,8 +8,6 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
       POSTGRES_DB: ${DB_NAME:-faculty_feedback}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -34,8 +32,6 @@ services:
       DB_NAME: ${DB_NAME:-faculty_feedback}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       PORT: 3000
-    ports:
-      - "5174:3000"
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -53,9 +49,7 @@ services:
       dockerfile: Dockerfile
     container_name: faculty_feedback_frontend
     environment:
-      VITE_API_URL: http://localhost:5174/api
-    ports:
-      - "5173:5173"
+      VITE_API_URL: https://binus-faculty-feedback.duckdns.org/api
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -65,8 +59,26 @@ services:
       - faculty_network
     command: npm run dev -- --host
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: faculty_feedback_caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - faculty_network
+
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
 
 networks:
   faculty_network:
